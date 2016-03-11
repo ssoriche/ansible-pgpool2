@@ -1,0 +1,16 @@
+---
+
+- name: install required pgpool2 packages
+  apt:
+    pkg: "{{ item }}"
+    state: latest
+  with_items: "{{ pgpool2_packages }}"
+
+- name: short command wrapper
+  template:
+    src: pcpctl.j2
+    dest: /usr/local/bin/pcpctl
+    owner: root
+    group: root
+    mode: 0755
+

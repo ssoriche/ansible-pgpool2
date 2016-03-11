@@ -1,0 +1,7 @@
+---
+
+- include: install.yml
+  tags: [pgpool2, pgpool2-install]
+
+- include: configure.yml
+  tags: [pgpool2, pgpool2-configure]
