@@ -27,9 +27,16 @@ die () {
 # PCP command wrapper due to terrible PCP CLI
 pcp_command () {
 	local command=$1
+	local __resultvar=$2
 	shift
-	pcp_$command "$PCP_TIMEOUT" "$PCP_HOST" "$PCP_PORT" \
-		"$PCP_USER" "$PCP_PASSWD" "$@"
+	shift
+	if [[ $__resultvar -eq NODE_COUNT ]]; then
+                eval $__resultvar=$(pcp_$command "$PCP_TIMEOUT" "$PCP_HOST" "$PCP_PORT" \
+					     "$PCP_USER" "$PCP_PASSWD" "$@")
+	else
+                eval $__resultvar='$(pcp_$command "$PCP_TIMEOUT" "$PCP_HOST" "$PCP_PORT" \
+	                                      "$PCP_USER" "$PCP_PASSWD" "$@")'
+	fi
 }
 
 # Fetch standby replication state by client_addr from master server
@@ -40,8 +47,8 @@ get_repl_info () {
 }
 
 main () {
-	# Determine node count, actual node id's starts with 0
-	NODE_COUNT=$(pcp_command node_count 2>&1)
+        # Determine node count, actual node id's starts with 0
+        pcp_command node_count NODE_COUNT
 	echo "$NODE_COUNT" | grep -E -q '^[0-9]+$' \
 		|| die "Error parsing pcp_node_count output: $NODE_COUNT"
 
@@ -54,7 +61,8 @@ main () {
 
 	for node_id in $(seq 0 $NODE_COUNT); do
 		# Fetching pgpool2 node information
-		NODE_INFO=$(pcp_command node_info "$node_id" 2>&1)
+		NODE_INFO="NODE_INFO$node_id"
+		pcp_command node_info NODE_INFO "$node_id"
 		read node_address node_port node_status node_weight <<-IN
 		$NODE_INFO
 		IN
@@ -65,13 +73,13 @@ main () {
 		# Reattaching only if detached and replica is fine
 		if [ \( "_$node_state" = "_streaming" \) -a \( "_$node_status" = "_3" \) ]; then
 			log "Node #$node_id ($node_address:$node_port) is $node_state and status=$node_status. Reattaching..."
-			pcp_command attach_node "$node_id"
+			pcp_command attach_node NODE_ATTACH "$node_id"
 
 			# pgpool2 reloading its workers
 			sleep 1
 
 			# Checking if node reattached
-			NODE_INFO=$(pcp_command node_info "$node_id" 2>&1)
+			pcp_command node_info NODE_INFO "$node_id"
 			read node_address node_port node_status node_weight <<-IN
 			$NODE_INFO
 			IN
