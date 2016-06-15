@@ -172,4 +172,5 @@ pgpool2_wd_lifecheck_user: nobody
 pgpool2_wd_port: 9000
 pgpool2_white_function_list: ''
 pgpool2_white_memqcache_table_list: ''
+pgpool2_pgk_update: latest
 
