@@ -3,7 +3,7 @@
 - name: install required pgpool2 packages
   apt:
     pkg: "{{ item }}"
-    state: "{{ pgpool2_pgk_update }}"
+    state: "{{ pgpool2_package_state }}"
   with_items: "{{ pgpool2_packages }}"
 
 - name: short command wrapper
