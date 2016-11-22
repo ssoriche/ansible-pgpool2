@@ -36,10 +36,20 @@ socket_dir = '{{ pgpool2_socket_dir }}'
                                    # The Debian package defaults to
                                    # /var/run/postgresql
                                    # (change requires restart)
-
+listen_backlog_multiplier = {{ pgpool2_listen_backlog_multiplier }}
+                                   # Set the backlog parameter of listen(2) to
+								   # num_init_children * listen_backlog_multiplier.
+                                   # (change requires restart)
+serialize_accept = {{ pgpool2_serialize_accept }}
+                                   # whether to serialize accept() call to avoid thundering herd problem
+                                   # (change requires restart)
 
 # - pgpool Communication Manager Connection Settings -
 
+pcp_listen_addresses = '{{ pgpool2_pcp_listen_addresses }}'
+                                   # Host name or IP address for pcp process to listen on:
+                                   # '*' for all, '' for no TCP/IP connections
+                                   # (change requires restart)
 pcp_port = {{ pgpool2_pcp_port }}
                                    # Port number for pcp
                                    # (change requires restart)
@@ -114,13 +124,13 @@ ssl_ca_cert_dir = '{{ pgpool2_ssl_ca_cert_dir }}'
 # POOLS
 #------------------------------------------------------------------------------
 
-# - Pool size -
+# - Concurrent session and pool size -
 
 num_init_children = {{ pgpool2_num_init_children }}
-                                   # Number of pools
+                                   # Number of concurrent sessions allowed
                                    # (change requires restart)
 max_pool = {{ pgpool2_max_pool }}
-                                   # Number of connections per pool
+                                   # Number of connection pool caches per connection
                                    # (change requires restart)
 
 # - Life time -
@@ -152,9 +162,7 @@ log_destination = '{{ pgpool2_log_destination }}'
 
 # - What to log -
 
-print_timestamp = {{ pgpool2_print_timestamp }}
-                                   # Print timestamp on each line
-                                   # (change requires restart)
+log_line_prefix = '{{ pgpool2_log_line_prefix }}'   # printf-style string to output at beginning of each log line.
 
 log_connections = {{ pgpool2_log_connections }}
                                    # Log connections
@@ -185,6 +193,32 @@ debug_level = {{ pgpool2_debug_level }}
                                    # Debug message verbosity level
                                    # 0 means no message, 1 or more mean verbose
 
+log_error_verbosity = {{ pgpool2_log_error_verbosity }}          # terse, default, or verbose messages
+
+client_min_messages = {{ pgpool2_client_min_messages }}           # values in order of decreasing detail:
+                                        #   debug5
+                                        #   debug4
+                                        #   debug3
+                                        #   debug2
+                                        #   debug1
+                                        #   log
+                                        #   notice
+                                        #   warning
+                                        #   error
+
+log_min_messages = {{ pgpool2_log_min_messages }}             # values in order of decreasing detail:
+                                        #   debug5
+                                        #   debug4
+                                        #   debug3
+                                        #   debug2
+                                        #   debug1
+                                        #   info
+                                        #   notice
+                                        #   warning
+                                        #   error
+                                        #   log
+                                        #   fatal
+                                        #   panic
 
 #------------------------------------------------------------------------------
 # FILE LOCATIONS
@@ -223,7 +257,7 @@ replication_mode = {{ pgpool2_replication_mode }}
                                    # (change requires restart)
 replicate_select = {{ pgpool2_replicate_select }}
                                    # Replicate SELECT statements
-                                   # when in replication or parallel mode
+                                   # when in replication mode
                                    # replicate_select is higher priority than
                                    # load_balance_mode.
 
@@ -272,6 +306,20 @@ black_function_list = '{{ pgpool2_black_function_list }}'
                                    # that write to database
                                    # Regexp are accepted
 
+database_redirect_preference_list = '{{ pgpool2_database_redirect_preference_list }}'
+								   # comma separated list of pairs of database and node id.
+								   # example: postgres:primary,mydb[0-4]:1,mydb[5-9]:2'
+								   # valid for streaming replicaton mode only.
+
+app_name_redirect_preference_list = '{{ pgpool2_app_name_redirect_preference_list }}'
+								   # comma separated list of pairs of app name and node id.
+								   # example: 'psql:primary,myapp[0-4]:1,myapp[5-9]:standby'
+								   # valid for streaming replicaton mode only.
+allow_sql_comments = {{ pgpool2_allow_sql_comments }}
+								   # if on, ignore SQL comments when judging if load balance or
+								   # query cache is possible.
+								   # If off, SQL comments effectively prevent the judgment
+								   # (pre 3.4 behavior).
 
 #------------------------------------------------------------------------------
 # MASTER/SLAVE MODE
@@ -298,6 +346,8 @@ sr_check_user = '{{ pgpool2_sr_check_user }}'
                                    # sr_check_period = 0
 sr_check_password = '{{ pgpool2_sr_check_password }}'
                                    # Password for streaming replication check user
+sr_check_database = '{{ pgpool2_sr_check_database }}'
+                                   # Database name for streaming replication check
 delay_threshold = {{ pgpool2_delay_threshold }}
                                    # Threshold before not dispatching query to standby node
                                    # Unit is in bytes
@@ -320,34 +370,6 @@ follow_master_command = '{{ pgpool2_follow_master_command }}'
                                    #   %R = new master database cluster path
                                    #   %% = '%' character
 
-
-#------------------------------------------------------------------------------
-# PARALLEL MODE
-#------------------------------------------------------------------------------
-
-parallel_mode = off
-                                   # Activates parallel query mode
-                                   # (change requires restart)
-pgpool2_hostname = '{{ pgpool2_hostname }}'
-                                   # Set pgpool2 hostname
-                                   # (change requires restart)
-
-# - System DB info -
-
-system_db_hostname  = 'localhost'
-                                   # (change requires restart)
-system_db_port = 5432
-                                   # (change requires restart)
-system_db_dbname = 'pgpool'
-                                   # (change requires restart)
-system_db_schema = 'pgpool_catalog'
-                                   # (change requires restart)
-system_db_user = 'pgpool'
-                                   # (change requires restart)
-system_db_password = ''
-                                   # (change requires restart)
-
-
 #------------------------------------------------------------------------------
 # HEALTH CHECK
 #------------------------------------------------------------------------------
@@ -362,11 +384,19 @@ health_check_user = '{{ pgpool2_health_check_user }}'
                                    # Health check user
 health_check_password = '{{ pgpool2_health_check_password }}'
                                    # Password for health check user
+health_check_database = '{{ pgpool2_health_check_database }}'
+                                   # Database name for health check. If '', tries 'postgres' frist, then 'template1'
+
 health_check_max_retries = {{ pgpool2_health_check_max_retries }}
                                    # Maximum number of times to retry a failed health check before giving up.
 health_check_retry_delay = {{ pgpool2_health_check_retry_delay }}
                                    # Amount of time to wait (in seconds) between retries.
-
+connect_timeout = {{ pgpool2_connect_timeout }}
+                                   # Timeout value in milliseconds before giving up to connect to backend.
+								   # Default is 10000 ms (10 second). Flaky network user may want to increase
+								   # the value. 0 means no timeout.
+								   # Note that this value is not only used for health check,
+								   # but also for ordinary conection to backend.
 
 #------------------------------------------------------------------------------
 # FAILOVER AND FAILBACK
@@ -466,9 +496,20 @@ wd_hostname = '{{ pgpool2_wd_hostname }}'
 wd_port = {{ pgpool2_wd_port }}
                                     # port number for watchdog service
                                     # (change requires restart)
+wd_priority = {{ pgpool2_wd_priority }}
+									# priority of this watchdog in leader election
+									# (change requires restart)
+
 wd_authkey = '{{ pgpool2_wd_authkey }}'
                                     # Authentication key for watchdog communication
                                     # (change requires restart)
+
+wd_ipc_socket_dir = '{{ pgpool2_wd_ipc_socket_dir }}'
+									# Unix domain socket path for watchdog IPC socket
+									# The Debian package defaults to
+									# /var/run/postgresql
+									# (change requires restart)
+
 
 # - Virtual IP control Setting -
 
@@ -476,8 +517,8 @@ delegate_IP = '{{ pgpool2_delegate_IP }}'
                                     # delegate IP address
                                     # If this is empty, virtual IP never bring up.
                                     # (change requires restart)
-ifconfig_path = '{{ pgpool2_ifconfig_path }}'
-                                    # ifconfig command path
+if_cmd_path = '{{ pgpool2_if_cmd_path }}'
+                                    # path to the directory where if_up/down_cmd exists 
                                     # (change requires restart)
 if_up_cmd = '{{ pgpool2_if_up_cmd }}'
                                     # startup delegate IP command
@@ -485,10 +526,9 @@ if_up_cmd = '{{ pgpool2_if_up_cmd }}'
 if_down_cmd = '{{ pgpool2_if_down_cmd }}'
                                     # shutdown delegate IP command
                                     # (change requires restart)
-
-arping_path = '{{ pgpool2_arping_path }}'  # arping command path
+arping_path = '{{ pgpool2_arping_path }}'
+                                    # arping command path
                                     # (change requires restart)
-
 arping_cmd = '{{ pgpool2_arping_cmd }}'
                                     # arping command
                                     # (change requires restart)
@@ -505,13 +545,23 @@ clear_memqcache_on_escalation = {{ pgpool2_clear_memqcache_on_escalation }}
 wd_escalation_command = '{{ pgpool2_wd_escalation_command }}'
                                     # Executes this command at escalation on new active pgpool.
                                     # (change requires restart)
+wd_de_escalation_command = '{{ pgpool2_wd_de_escalation_command }}'
+									# Executes this command when master pgpool resigns from being master.
+									# (change requires restart)
 
 # - Lifecheck Setting -
 
 # -- common --
 
+wd_monitoring_interfaces_list = '{{ pgpool2_wd_monitoring_interfaces_list }}'  # Comma separated list of interfaces names to monitor.
+									# if any interface from the list is active the watchdog will
+									# consider the network is fine
+									# 'any' to enable monitoring on all interfaces except loopback
+									# '' to disable monitoring
+
+
 wd_lifecheck_method = '{{ pgpool2_wd_lifecheck_method }}'
-                                    # Method of watchdog lifecheck ('heartbeat' or 'query')
+                                    # Method of watchdog lifecheck ('heartbeat' or 'query' or 'external')
                                     # (change requires restart)
 wd_interval = {{ pgpool2_wd_interval }}
                                     # lifecheck interval (sec) > 0
@@ -633,55 +683,62 @@ check_temp_table = {{ pgpool2_check_temp_table }}
                                    # and you want to save access to primary/master, you could turn this off.
                                    # Default is on.
 
+check_unlogged_table = {{ pgpool2_check_unlogged_table }}
+                                   # If on, enable unlogged table check in SELECT statements.
+                                   # This initiates queries against system catalog of primary/master
+                                   # thus increases load of master.
+                                   # If you are absolutely sure that your system never uses unlogged tables
+                                   # and you want to save access to primary/master, you could turn this off.
+                                   # Default is on.
 
 #------------------------------------------------------------------------------
-# ON MEMORY QUERY MEMORY CACHE
+# IN MEMORY QUERY MEMORY CACHE
 #------------------------------------------------------------------------------
 memory_cache_enabled = {{ pgpool2_memory_cache_enabled }}
-                                   # If on, use the memory cache functionality, off by default
+								   # If on, use the memory cache functionality, off by default
 memqcache_method = '{{ pgpool2_memqcache_method }}'
-                                   # Cache storage method. either 'shmem'(shared memory) or
-                                   # 'memcached'. 'shmem' by default
+								   # Cache storage method. either 'shmem'(shared memory) or
+								   # 'memcached'. 'shmem' by default
                                    # (change requires restart)
 memqcache_memcached_host = '{{ pgpool2_memqcache_memcached_host }}'
-                                   # Memcached host name or IP address. Mandatory if
-                                   # memqcache_method = 'memcached'.
-                                   # Defaults to localhost.
+								   # Memcached host name or IP address. Mandatory if
+								   # memqcache_method = 'memcached'.
+								   # Defaults to localhost.
                                    # (change requires restart)
 memqcache_memcached_port = {{ pgpool2_memqcache_memcached_port }}
-                                   # Memcached port number. Mondatory if memqcache_method = 'memcached'.
-                                   # Defaults to 11211.
+								   # Memcached port number. Mondatory if memqcache_method = 'memcached'.
+								   # Defaults to 11211.
                                    # (change requires restart)
 memqcache_total_size = {{ pgpool2_memqcache_total_size }}
-                                   # Total memory size in bytes for storing memory cache.
-                                   # Mandatory if memqcache_method = 'shmem'.
-                                   # Defaults to 64MB.
+								   # Total memory size in bytes for storing memory cache.
+								   # Mandatory if memqcache_method = 'shmem'.
+								   # Defaults to 64MB.
                                    # (change requires restart)
 memqcache_max_num_cache = {{ pgpool2_memqcache_max_num_cache }}
-                                   # Total number of cache entries. Mandatory
-                                   # if memqcache_method = 'shmem'.
-                                   # Each cache entry consumes 48 bytes on shared memory.
-                                   # Defaults to 1,000,000(45.8MB).
+								   # Total number of cache entries. Mandatory
+								   # if memqcache_method = 'shmem'.
+								   # Each cache entry consumes 48 bytes on shared memory.
+								   # Defaults to 1,000,000(45.8MB).
                                    # (change requires restart)
 memqcache_expire = {{ pgpool2_memqcache_expire }}
-                                   # Memory cache entry life time specified in seconds.
-                                   # 0 means infinite life time. 0 by default.
+								   # Memory cache entry life time specified in seconds.
+								   # 0 means infinite life time. 0 by default.
                                    # (change requires restart)
 memqcache_auto_cache_invalidation = {{ pgpool2_memqcache_auto_cache_invalidation }}
-                                   # If on, invalidation of query cache is triggered by corresponding
-                                   # DDL/DML/DCL(and memqcache_expire).  If off, it is only triggered
-                                   # by memqcache_expire.  on by default.
+								   # If on, invalidation of query cache is triggered by corresponding
+								   # DDL/DML/DCL(and memqcache_expire).  If off, it is only triggered
+								   # by memqcache_expire.  on by default.
                                    # (change requires restart)
 memqcache_maxcache = {{ pgpool2_memqcache_maxcache }}
-                                   # Maximum SELECT result size in bytes.
-                                   # Must be smaller than memqcache_cache_block_size. Defaults to 400KB.
+								   # Maximum SELECT result size in bytes.
+								   # Must be smaller than memqcache_cache_block_size. Defaults to 400KB.
                                    # (change requires restart)
 memqcache_cache_block_size = {{ pgpool2_memqcache_cache_block_size }}
-                                   # Cache block size in bytes. Mandatory if memqcache_method = 'shmem'.
-                                   # Defaults to 1MB.
+								   # Cache block size in bytes. Mandatory if memqcache_method = 'shmem'.
+								   # Defaults to 1MB.
                                    # (change requires restart)
 memqcache_oiddir = '{{ pgpool2_memqcache_oiddir }}'
-                                   # Temporary work directory to record table oids
+				   				   # Temporary work directory to record table oids
                                    # (change requires restart)
 white_memqcache_table_list = '{{ pgpool2_white_memqcache_table_list }}'
                                    # Comma separated list of table names to memcache
@@ -691,4 +748,3 @@ black_memqcache_table_list = '{{ pgpool2_black_memqcache_table_list }}'
                                    # Comma separated list of table names not to memcache
                                    # that don't write to database
                                    # Regexp are accepted
-
