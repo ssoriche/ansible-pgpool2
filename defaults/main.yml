@@ -141,7 +141,7 @@ pgpool2_pcp_port: 9898
 pgpool2_pcp_socket_dir: /var/run/postgresql
 pgpool2_pid_file_name: /var/run/postgresql/pgpool.pid
 pgpool2_ping_path: /bin
-pgpool2_pool_passwd: ''
+pgpool2_pool_passwd: 'passwd_file'
 pgpool2_port: 5433
 pgpool2_recovery_1st_stage_command: ''
 pgpool2_recovery_2nd_stage_command: ''

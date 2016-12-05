@@ -472,7 +472,7 @@ client_idle_limit_in_recovery = {{ pgpool2_client_idle_limit_in_recovery }}
 #------------------------------------------------------------------------------
 
 # - Enabling -
-
+{% if pgpool2_use_watchdog == 'on' %}
 use_watchdog = {{ pgpool2_use_watchdog }}
                                     # Activates watchdog
                                     # (change requires restart)
@@ -510,7 +510,7 @@ wd_ipc_socket_dir = '{{ pgpool2_wd_ipc_socket_dir }}'
 									# /var/run/postgresql
 									# (change requires restart)
 
-
+{% endif %}
 # - Virtual IP control Setting -
 
 delegate_IP = '{{ pgpool2_delegate_IP }}'
