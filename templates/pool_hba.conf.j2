@@ -66,7 +66,7 @@
 {% if record.comment is defined -%}
 # {{ record.comment }}
 {% endif %}
-{{ record.type | mandatory }}   {{ record.database | mandatory }}   {{ record.user | mandatory }}   {{ record.address }}    {{ record.method | mandatory }}
+{{ record.type | mandatory }}   {{ record.database | mandatory }}   {{ record.user | mandatory }}   {{ record.address }}    {{ record.auth_method | mandatory }}
 {%- endfor %}
 
 # pgpool2_pool_hba
@@ -74,6 +74,6 @@
 {% if record.comment is defined -%}
 # {{ record.comment }}
 {% endif %}
-{{ record.type | mandatory }}   {{ record.database | mandatory }}   {{ record.user | mandatory }}   {{ record.address }}    {{ record.method | mandatory }}
-{%- endfor %}
+{{ record.type | mandatory }}   {{ record.database | mandatory }}   {{ record.user | mandatory }}   {{ record.address }}    {{ record.auth_method | mandatory }}
+{% endfor %}
 

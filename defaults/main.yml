@@ -21,13 +21,13 @@ pgpool2_hba_default:
     database: all
     user: all
     address: ""
-    method: trust
+    auth_method: trust
   - comment: local IPv4 connections
     type: host
     database: all
     user: all
     address: 127.0.0.1/32
-    method: md5
+    auth_method: md5
 
 pgpool2_hba_custom: []
 
